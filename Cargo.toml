@@ -1,0 +1,25 @@
+[package]
+name = "ue5sdk"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "offsets_replacer"
+path = "src/offsets_replacer.rs"
+
+[dependencies]
+struct_macro = { path = "macro" }
+
+[profile.release]
+overflow-checks = false
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+panic = "abort"
+debug = false
+strip = true
+incremental = false
+debug-assertions = false

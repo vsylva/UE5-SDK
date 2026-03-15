@@ -1,0 +1,8 @@
+[target.x86_64-pc-windows-msvc]
+rustflags = [
+    "-C", "linker=rust-lld",
+
+    "-C", "target-feature=+sse4.1",
+
+    "-C", "control-flow-guard=n",
+]
