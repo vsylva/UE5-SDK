@@ -2,19 +2,31 @@
   <img src="assets/demo.png" alt="" width="800px">
 </div>
 
+---
 
-This is an SDK I developed using Rust. It has been in use for some time and works well.
+# Unreal Engine Rust SDK (ARK: ASA & Generic)
+> A high-performance, macro-driven SDK for Unreal Engine 5+ development in Rust.
 
-Primarily developed for ARK ASA. It can also be adapted for other Unreal Engine games after modification.
+---
 
-Some code is ported from the dumper-7 SDK.
+### Overview
+This SDK is a sophisticated Rust implementation for **ARK: Survival Ascended (ASA)** and other Unreal Engine 5 titles. It leverages Rust's powerful metaprogramming to achieve C++-like memory layouts and inheritance patterns.
 
-I used attribute macros to simulate C++ memory layouts, and used deref to simulate inheritance-based method calls.
+### Key Technical Features
+* **Memory Layout Simulation**: Uses custom `Attribute Macros` to mirror C++ struct alignment and padding precisely.
+* **Zero-Cost Inheritance**: Implements the `Deref` trait to simulate C++ class hierarchy, allowing `Actor` to call `Object` methods seamlessly.
 
-For well-known reasons, you need to locate certain function addresses on their own and implement spoofcall themselves.
+### Manual Implementation Required
+For security and anti-cheat bypass reasons, the following must be implemented by the user:
+1.  **Pattern Scanning**: Locate hardcoded function addresses.
+2.  **Stack Spoofing**: Provide a custom `spoofcall` stub to mask return addresses.
 
-A small utility is also included, which can replace the offsets in the SDK with the latest ones from the dumper-7 SDK.
+### 💻 Tooling Usage
+To sync the Rust SDK with the latest Dumper-7 output:
+```bash
+./offsets_replacer.exe <Dumper7_CppSDK_Path> <Rust_SDK_Src_Path>
+```
 
-./offsets_replacer.exe  C:\Dumper-7\5.5.4-801548+++ARK1+Rel-1.83-ShooterGame\CppSDK  ../../src/SDK
+---
 
-https://github.com/microsoft/windows-rs
+The w! macro is a utility provided by windows-rs to create UTF-16 wide string literals (&'static HSTRING or PCWSTR) at compile-time.
