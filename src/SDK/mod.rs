@@ -132,13 +132,11 @@ pub mod Globals {
     pub static mut SCREEN_SCALE: f64 = 1.0;
 }
 
-use std::ptr;
-
 #[repr(C)]
 pub struct MODULEINFO {
-    pub lpBaseOfDll: *mut std::ffi::c_void,
+    pub lpBaseOfDll: *mut ::core::ffi::c_void,
     pub SizeOfImage: u32,
-    pub EntryPoint:  *mut std::ffi::c_void,
+    pub EntryPoint:  *mut ::core::ffi::c_void,
 }
 
 #[link(name = "kernel32")]
@@ -157,7 +155,7 @@ unsafe extern "system" {
 }
 
 pub unsafe fn get_main_module() -> Option<(usize, u32,),> {
-    let h_module = get_module_handle(ptr::null(),);
+    let h_module = get_module_handle(::core::ptr::null(),);
     if h_module == 0
     {
         return None;
@@ -165,8 +163,9 @@ pub unsafe fn get_main_module() -> Option<(usize, u32,),> {
 
     let h_process = get_current_process();
 
-    let mut mod_info = std::mem::zeroed::<MODULEINFO,>();
-    let result = get_module_information(h_process, h_module, &mut mod_info, std::mem::size_of::<MODULEINFO,>() as u32,);
+    let mut mod_info = ::core::mem::zeroed::<MODULEINFO,>();
+    let result =
+        get_module_information(h_process, h_module, &mut mod_info, ::core::mem::size_of::<MODULEINFO,>() as u32,);
 
     if result != 0 { Some((mod_info.lpBaseOfDll as usize, mod_info.SizeOfImage,),) } else { None }
 }
@@ -235,8 +234,6 @@ pub unsafe extern "system" fn ProcessEvent(a: usize, b: usize, c: usize, d: usiz
     crate::SpoofCall!(Globals::ProcessEventFnAddr, a, b, c, d)
 }
 
-use std::mem::transmute;
-
 #[inline(always)]
 pub unsafe fn SpoofCallInternal<Ret, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11,>(
     fn_ptr: usize,
@@ -255,7 +252,7 @@ pub unsafe fn SpoofCallInternal<Ret, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A1
     type FnType<Ret, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11,> =
         unsafe extern "system" fn(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11,) -> Ret;
 
-    let func: FnType<Ret, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11,> = transmute(fn_ptr,);
+    let func: FnType<Ret, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11,> = ::core::mem::transmute(fn_ptr,);
 
     func(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11,)
 }

@@ -124,7 +124,7 @@ pub unsafe extern "system" fn PostRender(this: usize, canvas_ptr: *mut SDK::UCan
 }
 
 pub mod World {
-    use std::ptr::null_mut;
+    use ::core::ptr::null_mut;
 
     use crate::SDK::{
         APawn::APawn, APlayerCameraManager::APlayerCameraManager, APrimalDinoCharacter::APrimalDinoCharacter,
@@ -236,7 +236,7 @@ pub mod World {
             .filter(|p| p.bit_get_IsPrimalDinoCharacter(),)
             .map(|p| p as *const APawn as *mut APrimalDinoCharacter,)
             .filter(|ptr| ptr.is_valid(),)
-            .unwrap_or(std::ptr::null_mut(),);
+            .unwrap_or(::core::ptr::null_mut(),);
 
         let camera_manager = PlayerController.as_ref_unchecked().PlayerCameraManager;
         if !camera_manager.is_valid()
