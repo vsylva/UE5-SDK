@@ -13,25 +13,6 @@ impl FName {
 
     #[inline]
     pub unsafe fn to_string(&self,) -> String {
-        let mut buffer = [0u16; 256];
-        let mut temp_fstring = super::FString::FString::from_ptr(buffer.as_mut_ptr(), 0, 256,);
-
-        let get_name_entry = crate::SpoofCall!(super::super::Globals::GetNmaeEntryFnAddr,self.ComparisonIndex,-> *mut ::core::ffi::c_void);
-
-        crate::SpoofCall!(super::super::Globals::AppendStringFnAddr, get_name_entry, &mut temp_fstring);
-
-        let mut output = temp_fstring.to_string();
-
-        if self.Number > 0
-        {
-            output.push_str(&format!("_{}", self.Number - 1),);
-        }
-
-        output
-    }
-
-    #[inline]
-    pub unsafe fn to_string_by_chunk(&self,) -> String {
         let chunk_idx = (self.ComparisonIndex >> 16) as usize;
         let name_idx = (self.ComparisonIndex as u16) as usize;
 

@@ -156,7 +156,7 @@ fn build_dumper7_index(sdk_dir: &Path,) -> io::Result<SdkIndex,> {
     let mut sdk: SdkIndex = HashMap::new();
     let mut file_count = 0usize;
     scan_cpp_dir(sdk_dir, &mut sdk, &mut file_count,)?;
-    eprintln!("[info] Dumper-7: 扫描了 {} 个文件，共找到 {} 个类/结构体", file_count, sdk.len());
+    eprintln!("[info] Dumper-7: Scanned {} files, found {} classes/structs", file_count, sdk.len());
     Ok(sdk,)
 }
 
@@ -188,7 +188,7 @@ fn parse_cpp_file(path: &Path, sdk: &mut SdkIndex,) {
         Ok(c,) => c,
         Err(e,) =>
         {
-            eprintln!("[warn] 无法读取 {}: {}", path.display(), e);
+            eprintln!("[warn] Failed to read {}: {}", path.display(), e);
             return;
         }
     };
@@ -235,15 +235,11 @@ fn parse_cpp_file(path: &Path, sdk: &mut SdkIndex,) {
 
 #[derive(Debug,)]
 struct RustOffsetEntry {
-    file: std::path::PathBuf,
-
+    file:            std::path::PathBuf,
     offset_line_idx: usize,
-
-    class_name: String,
-
-    member_name: String,
-
-    current_offset: u32,
+    class_name:      String,
+    member_name:     String,
+    current_offset:  u32,
 }
 
 fn parse_rust_offset_attr(line: &str,) -> Option<u32,> {
@@ -353,7 +349,7 @@ fn parse_rust_file(path: &Path, entries: &mut Vec<RustOffsetEntry,>,) {
         Ok(c,) => c,
         Err(e,) =>
         {
-            eprintln!("[warn] 无法读取 {}: {}", path.display(), e);
+            eprintln!("[warn] Failed to read {}: {}", path.display(), e);
             return;
         }
     };
@@ -473,7 +469,7 @@ fn fix_rust_file(path: &Path, fixes: &[(usize, u32, u32,)],) -> io::Result<usize
             }
             else
             {
-                eprintln!("[warn] 行 {} 替换失败，原文: {}", line_idx + 1, line.trim());
+                eprintln!("[warn] Failed to replace line {}: {}", line_idx + 1, line.trim());
             }
         }
     }
@@ -522,8 +518,8 @@ fn main() -> io::Result<(),> {
 
     if args.len() < 3
     {
-        eprintln!("用法: {} <dumper7_sdk_dir> <rust_sdk_dir> [--dry-run]", args[0]);
-        eprintln!("  --dry-run  只报告差异，不修改文件");
+        eprintln!("Usage: {} <dumper7_sdk_dir> <rust_sdk_dir> [--dry-run]", args[0]);
+        eprintln!("  --dry-run  Report differences without modifying files");
         std::process::exit(1,);
     }
 
@@ -533,37 +529,37 @@ fn main() -> io::Result<(),> {
 
     if !dumper7_dir.is_dir()
     {
-        eprintln!("[error] '{}' 不是目录", dumper7_dir.display());
+        eprintln!("[error] '{}' is not a directory", dumper7_dir.display());
         std::process::exit(1,);
     }
     if !rust_dir.is_dir()
     {
-        eprintln!("[error] '{}' 不是目录", rust_dir.display());
+        eprintln!("[error] '{}' is not a directory", rust_dir.display());
         std::process::exit(1,);
     }
 
     if dry_run
     {
-        eprintln!("[info] 模式: dry-run（仅报告，不修改）");
+        eprintln!("[info] Mode: Dry-run (Report only, no modifications)");
     }
     else
     {
-        eprintln!("[info] 模式: 自动修正（将直接修改 Rust 源文件）");
+        eprintln!("[info] Mode: Auto-fix (Rust source files will be modified)");
     }
 
-    eprintln!("[info] 正在扫描 Dumper-7 SDK: {}", dumper7_dir.display());
+    eprintln!("[info] Scanning Dumper-7 SDK: {}", dumper7_dir.display());
     let dumper7 = build_dumper7_index(dumper7_dir,)?;
 
-    eprintln!("[info] 正在扫描 Rust SDK: {}", rust_dir.display());
+    eprintln!("[info] Scanning Rust SDK: {}", rust_dir.display());
     let mut rust_entries: Vec<RustOffsetEntry,> = Vec::new();
     scan_rust_dir(rust_dir, &mut rust_entries,)?;
-    eprintln!("[info] Rust SDK: 找到 {} 条偏移记录", rust_entries.len());
+    eprintln!("[info] Rust SDK: Found {} offset records", rust_entries.len());
 
     let mut file_fixes: HashMap<std::path::PathBuf, Vec<(usize, u32, u32,),>,> = HashMap::new();
 
-    println!("\n========== 偏移对比结果 ==========\n");
-    println!("  {:<4} {:<70} {}", "状态", "类::成员", "说明");
-    println!("  {}", "-".repeat(100));
+    println!("\n========== Offset Comparison Results ==========\n");
+    println!("  {:<8} {:<70} {}", "Status", "Class::Member", "Details");
+    println!("  {}", "-".repeat(110));
 
     let (mut ok, mut fixed, mut not_found, mut class_not_found,) = (0usize, 0usize, 0usize, 0usize,);
 
@@ -576,28 +572,28 @@ fn main() -> io::Result<(),> {
         {
             None =>
             {
-                println!("  🔍  {:<70} Rust={} 类在 Dumper-7 中不存在", key, rust_hex);
+                println!("  SEARCH   {:<70} Rust={} | Class not found in Dumper-7", key, rust_hex);
                 class_not_found += 1;
             }
             Some(members,) => match members.get(&entry.member_name,)
             {
                 None =>
                 {
-                    println!("  ⚠️   {:<70} Rust={} 成员在 Dumper-7 中不存在", key, rust_hex);
+                    println!("  MISSING  {:<70} Rust={} | Member not found in Dumper-7", key, rust_hex);
                     not_found += 1;
                 }
                 Some(info,) =>
                 {
                     if info.offset == entry.current_offset
                     {
-                        println!("  ✅  {:<70} = {}", key, rust_hex);
+                        println!("  OK       {:<70} = {}", key, rust_hex);
                         ok += 1;
                     }
                     else
                     {
                         let d7_hex = format!("0x{:04X}", info.offset);
-                        let action = if dry_run { "（dry-run）" } else { "→ 已修正" };
-                        println!("  ❌  {:<70} Rust={} Dumper7={} {}", key, rust_hex, d7_hex, action);
+                        let action = if dry_run { "[DRY-RUN]" } else { "-> FIXED" };
+                        println!("  DIFF     {:<70} Rust={} Dumper7={} {}", key, rust_hex, d7_hex, action);
                         if !dry_run
                         {
                             file_fixes.entry(entry.file.clone(),).or_default().push((
@@ -615,7 +611,7 @@ fn main() -> io::Result<(),> {
 
     if !dry_run && !file_fixes.is_empty()
     {
-        println!("\n========== 修改文件 ==========\n");
+        println!("\n========== Applying Modifications ==========\n");
         let mut total_fixed_lines = 0usize;
         for (file, fixes,) in &file_fixes
         {
@@ -623,25 +619,25 @@ fn main() -> io::Result<(),> {
             {
                 Ok(n,) =>
                 {
-                    println!("  📝  {} → 修正 {} 处", file.display(), n);
+                    println!("  WRITTEN  {} -> Fixed {} locations", file.display(), n);
                     total_fixed_lines += n;
                 }
                 Err(e,) =>
                 {
-                    eprintln!("[error] 修改 {} 失败: {}", file.display(), e);
+                    eprintln!("[error] Failed to modify {}: {}", file.display(), e);
                 }
             }
         }
-        println!("\n  共修改 {} 个文件，合计修正 {} 处偏移", file_fixes.len(), total_fixed_lines);
+        println!("\n  Total: Modified {} files, fixed {} offsets", file_fixes.len(), total_fixed_lines);
     }
 
-    println!("\n========== 汇总 ==========");
+    println!("\n========== Summary ==========");
     println!(
-        "  总计 {} | ✅ {} | ❌ {}（{}） | ⚠️  {} | 🔍 {}",
+        "  Total: {} | OK: {} | Fixed: {} ({}) | Member Missing: {} | Class Missing: {}",
         rust_entries.len(),
         ok,
         fixed,
-        if dry_run { "dry-run" } else { "已修正" },
+        if dry_run { "dry-run" } else { "applied" },
         not_found,
         class_not_found
     );
@@ -720,7 +716,7 @@ pub struct APrimalDinoCharacter {
         fs::write(&tmp, snippet,).unwrap();
         let mut entries = Vec::new();
         parse_rust_file(&tmp, &mut entries,);
-        fs::remove_file(&tmp,).unwrap();
+        let _ = fs::remove_file(&tmp,);
 
         assert_eq!(entries.len(), 3);
 

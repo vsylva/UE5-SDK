@@ -116,20 +116,15 @@ pub mod mod_impls;
 pub mod Globals {
     use super::Structs::FVector2D::FVector2D;
 
-    pub static mut ModuleBase: usize = 0;
+    pub static mut ModuleAddr: usize = 0;
     pub static mut ModuleSize: usize = 0;
 
     pub static mut GworldPP: *mut *mut super::UWorld::UWorld = ::core::ptr::null_mut();
     pub static mut GnamesP: usize = 0;
     pub static mut GobjectsP: *mut super::Structs::TUObjectArray::TUObjectArray = ::core::ptr::null_mut();
 
-    pub static mut AppendStringFnAddr: usize = 0;
-    pub static mut GetNmaeEntryFnAddr: usize = 0;
-
     pub static mut ProcessEventFnAddr: usize = 0;
     pub static mut StaticFindObjectFnAddr: usize = 0;
-
-    pub static mut JmpRbxRegGadGet: usize = 0;
 
     pub static mut SCREEN_SIZE: super::Structs::FVector2D::FVector2D =
         super::Structs::FVector2D::FVector2D { X: 1920.0, Y: 1080.0, };
@@ -137,72 +132,91 @@ pub mod Globals {
     pub static mut SCREEN_SCALE: f64 = 1.0;
 }
 
+use std::ptr;
+
+#[repr(C)]
+pub struct MODULEINFO {
+    pub lpBaseOfDll: *mut std::ffi::c_void,
+    pub SizeOfImage: u32,
+    pub EntryPoint:  *mut std::ffi::c_void,
+}
+
+#[link(name = "kernel32")]
+unsafe extern "system" {
+    #[link_name = "GetModuleHandleW"]
+    fn get_module_handle(lp_module_name: *const u16,) -> isize;
+
+    #[link_name = "GetCurrentProcess"]
+    fn get_current_process() -> isize;
+}
+
+#[link(name = "psapi")]
+unsafe extern "system" {
+    #[link_name = "GetModuleInformation"]
+    fn get_module_information(h_process: isize, h_module: isize, lp_mod_info: *mut MODULEINFO, cb: u32,) -> i32;
+}
+
+pub unsafe fn get_main_module() -> Option<(usize, u32,),> {
+    let h_module = get_module_handle(ptr::null(),);
+    if h_module == 0
+    {
+        return None;
+    }
+
+    let h_process = get_current_process();
+
+    let mut mod_info = std::mem::zeroed::<MODULEINFO,>();
+    let result = get_module_information(h_process, h_module, &mut mod_info, std::mem::size_of::<MODULEINFO,>() as u32,);
+
+    if result != 0 { Some((mod_info.lpBaseOfDll as usize, mod_info.SizeOfImage,),) } else { None }
+}
+
 #[deny(dead_code)]
 #[inline]
 pub(crate) unsafe fn setup() -> bool {
-    Globals::ModuleBase = todo!();
+    let Some((module_addr, module_size,),) = get_main_module()
+    else
+    {
+        return false;
+    };
 
-    if Globals::ModuleBase == 0
+    Globals::ModuleAddr = module_addr;
+    if Globals::ModuleAddr == 0
     {
         return false;
     }
 
-    Globals::ModuleSize = todo!();
-
+    Globals::ModuleSize = module_size as usize;
     if Globals::ModuleSize == 0
     {
         return false;
     }
 
-    Globals::JmpRbxRegGadGet = todo!();
-
-    if Globals::JmpRbxRegGadGet == 0
-    {
-        return false;
-    }
-
-    Globals::GworldPP = todo!();
+    Globals::GworldPP = (Globals::ModuleAddr + 0x0DE14C48) as *mut _;
     if Globals::GworldPP.is_null()
     {
         return false;
     }
 
-    Globals::GnamesP = todo!();
+    Globals::GnamesP = Globals::ModuleAddr + 0x0DE4DBC0;
     if Globals::GnamesP == 0
     {
         return false;
     }
 
-    Globals::GobjectsP = todo!();
-
+    Globals::GobjectsP = (Globals::ModuleAddr + 0x0DACF190) as *mut _;
     if Globals::GobjectsP.is_null()
     {
         return false;
     }
 
-    Globals::GetNmaeEntryFnAddr = todo!();
-
-    if Globals::GetNmaeEntryFnAddr == 0
-    {
-        return false;
-    }
-
-    Globals::AppendStringFnAddr = todo!();
-
-    if Globals::AppendStringFnAddr == 0
-    {
-        return false;
-    }
-
-    Globals::StaticFindObjectFnAddr = todo!();
-
+    Globals::StaticFindObjectFnAddr = Globals::ModuleAddr + 0x17F6080;
     if Globals::StaticFindObjectFnAddr == 0
     {
         return false;
     }
 
-    Globals::ProcessEventFnAddr = todo!();
-
+    Globals::ProcessEventFnAddr = Globals::ModuleAddr + 0x17D7DD0;
     if Globals::ProcessEventFnAddr == 0
     {
         return false;
@@ -221,7 +235,9 @@ pub unsafe extern "system" fn ProcessEvent(a: usize, b: usize, c: usize, d: usiz
     crate::SpoofCall!(Globals::ProcessEventFnAddr, a, b, c, d)
 }
 
-#[inline]
+use std::mem::transmute;
+
+#[inline(always)]
 pub unsafe fn SpoofCallInternal<Ret, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11,>(
     fn_ptr: usize,
     a1: A1,
@@ -236,7 +252,12 @@ pub unsafe fn SpoofCallInternal<Ret, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A1
     a10: A10,
     a11: A11,
 ) -> Ret {
-    todo!()
+    type FnType<Ret, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11,> =
+        unsafe extern "system" fn(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11,) -> Ret;
+
+    let func: FnType<Ret, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11,> = transmute(fn_ptr,);
+
+    func(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11,)
 }
 
 #[doc = "You MUST add `use <SDK>::spoof_call;` in your project root (e.g., lib.rs) to make this macro available globally"]

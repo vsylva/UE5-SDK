@@ -201,7 +201,6 @@ pub mod World {
         }
         LocalPlayer = local_player;
 
-        // PlayerController
         let pc = LocalPlayer.as_ref_unchecked().PlayerController as *mut AShooterPlayerController;
         if !pc.is_valid()
         {
@@ -209,7 +208,6 @@ pub mod World {
         }
         PlayerController = pc;
 
-        // Pawn & HUD
         let pawn = PlayerController.as_ref_unchecked().AcknowledgedPawn;
         if !pawn.is_valid()
         {
